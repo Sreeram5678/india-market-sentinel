@@ -6,7 +6,7 @@ description: Build the India Market Sentinel dashboard from scratch
 
 Follow these steps to implement the core features of the sentinel.
 
-## Phase 1: Environment Setup
+## Phase 1: Environment Setup (macOS)
 
 1. Ensure all dependencies from `requirements.txt` are installed.
    ```bash
@@ -17,18 +17,25 @@ Follow these steps to implement the core features of the sentinel.
    brew install tesseract poppler
    ```
 
-## Phase 2: Core Logic Implementation
+## Phase 2: Bootstrap local data
 
-3. **Corporate Spy**: Create `src/corporate_spy.py` to handle BSE/NSE filing scraping and OCR.
-4. **Sentiment Auditor**: Create `src/sentiment_auditor.py` to scrape news and calculate Mood Scores.
+3. Seed companies (symbol → BSE scrip code) by editing `data/seed_companies.csv`, then:
+   ```bash
+   python scripts/bootstrap_companies.py
+   ```
 
-## Phase 3: Dashboard Assembly
+## Phase 3: Run backend + UI
 
-5. **UI**: Create `app.py` using Streamlit.
-6. **Data Integration**: Connect the logic scripts to the Streamlit UI.
-7. **Visualization**: Implement the price + sentiment + filing event chart.
+4. Start the backend (FastAPI):
+   ```bash
+   uvicorn ims.api:app --reload --port 8000
+   ```
+5. Start the UI (Streamlit):
+   ```bash
+   streamlit run app.py
+   ```
 
 ## Phase 4: Testing & Polish
 
-8. Test with a sample symbol like `BEL` (Bharat Electronics) or `RELIANCE`.
-9. Ensure OCR handles low-quality PDF snippets.
+6. Test with a sample symbol like `BEL` (Bharat Electronics) or `RELIANCE`.
+7. Ensure OCR handles low-quality PDF filings (non-selectable text).

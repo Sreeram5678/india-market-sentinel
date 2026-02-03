@@ -172,7 +172,7 @@ class Repos:
     ) -> None:
         self.conn.execute(
             """
-            INSERT INTO filing_artifacts(
+            INSERT OR REPLACE INTO filing_artifacts(
               id, filing_id, pdf_path, text_path, ocr_used, ocr_pages, ocr_engine_version
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
@@ -339,4 +339,3 @@ class Repos:
             "company": self.get_company(symbol),
             "watchlist": any(w["symbol"] == symbol.upper() for w in self.list_watchlist()),
         }
-

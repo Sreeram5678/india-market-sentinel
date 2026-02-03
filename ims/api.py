@@ -26,7 +26,7 @@ def _startup() -> None:
         try:
             from ims.scheduler import start_scheduler
 
-            start_scheduler(settings)
+            app.state.scheduler_state = start_scheduler(settings)
         except Exception as e:  # noqa: BLE001
             logger.exception("Failed to start scheduler: %s", e)
 
@@ -121,4 +121,3 @@ def filing_detail(filing_id: str):
         if not f:
             raise HTTPException(404, "Filing not found")
         return f
-

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
+import json
 
 import httpx
 
@@ -36,7 +37,7 @@ class HttpClient:
     def get_json(self, url: str, *, params: dict | None = None, headers: dict | None = None) -> dict:
         text = self.get_text(url, params=params, headers=headers)
         try:
-            return httpx.Response(200, text=text).json()
+            return json.loads(text)
         except Exception as e:  # noqa: BLE001
             raise RuntimeError(f"Invalid JSON from {url}") from e
 
@@ -61,4 +62,3 @@ class HttpClient:
                 logger.warning("DOWNLOAD failed attempt=%s url=%s err=%s", attempt, url, e)
                 time.sleep(sleep_s)
         raise RuntimeError(f"DOWNLOAD failed after {self.retries} retries: {url}") from last_exc
-
