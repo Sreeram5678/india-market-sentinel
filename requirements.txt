@@ -7,3 +7,12 @@ textblob
 streamlit
 matplotlib
 pandas
+fastapi
+uvicorn[standard]
+httpx
+feedparser
+yfinance
+plotly
+apscheduler
+python-dotenv
+pytest
