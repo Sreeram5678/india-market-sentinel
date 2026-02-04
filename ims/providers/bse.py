@@ -32,6 +32,21 @@ class BseAnnouncementsProvider:
     def _fmt(d: date) -> str:
         return d.strftime("%Y%m%d")
 
+    @staticmethod
+    def _normalize_pdf_url(raw: str) -> str:
+        pdf_url = (raw or "").strip()
+        if not pdf_url:
+            return ""
+        if pdf_url.startswith("//"):
+            return "https:" + pdf_url
+        if pdf_url.startswith("http://") or pdf_url.startswith("https://"):
+            return pdf_url
+        if pdf_url.startswith("/"):
+            return "https://www.bseindia.com" + pdf_url
+        if pdf_url.lower().endswith(".pdf"):
+            return f"https://www.bseindia.com/xml-data/corpfiling/AttachLive/{pdf_url}"
+        return ""
+
     def list_announcements(self, *, scrip_code: str, from_date: date, to_date: date) -> list[BseAnnouncement]:
         params = {
             "strCat": "-1",
@@ -57,11 +72,9 @@ class BseAnnouncementsProvider:
             if not isinstance(row, dict):
                 continue
             title = (row.get("NEWSSUB") or row.get("headline") or row.get("SUBJECT") or "").strip()
-            pdf_url = (row.get("ATTACHMENTNAME") or row.get("attachment") or row.get("pdf") or "").strip()
-            if pdf_url and pdf_url.startswith("//"):
-                pdf_url = "https:" + pdf_url
-            if pdf_url and pdf_url.startswith("/"):
-                pdf_url = "https://www.bseindia.com" + pdf_url
+            pdf_url = self._normalize_pdf_url(
+                row.get("ATTACHMENTNAME") or row.get("attachment") or row.get("pdf") or ""
+            )
 
             dt = row.get("NEWS_DT") or row.get("date") or row.get("announced_at")
             announced_at: str | None = None
@@ -75,4 +88,3 @@ class BseAnnouncementsProvider:
 
             out.append(BseAnnouncement(announced_at=announced_at, title=title, pdf_url=pdf_url))
         return out
-

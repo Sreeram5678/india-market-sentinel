@@ -69,7 +69,13 @@ def analyze(symbol: str, req: AnalyzeRequest):
     symbol = symbol.upper().strip()
     with connect(settings.db_path) as conn:
         repos = Repos(conn)
-        run = repos.create_run(symbol)
+        company = repos.get_company(symbol)
+        if not company:
+            raise HTTPException(400, f"Unknown symbol: {symbol}. Seed company and add to watchlist first.")
+        try:
+            run = repos.create_run(symbol)
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(500, f"Unable to create analyze run for {symbol}: {e}") from e
         try:
             from ims.pipelines.analyze import run_analyze
 
@@ -84,6 +90,7 @@ def analyze(symbol: str, req: AnalyzeRequest):
         except Exception as e:  # noqa: BLE001
             repos.add_run_log(run.id, "ERROR", f"Analyze failed: {e}")
             repos.finish_run(run.id, "FAILED")
+            raise HTTPException(500, f"Analyze failed for {symbol}: {e}") from e
     return {"run_id": run.id}
 
 
