@@ -173,18 +173,34 @@ def build_chart(payload: dict) -> go.Figure:
         my = [m["mood_avg"] for m in mood]
         fig.add_trace(go.Scatter(x=mx, y=my, mode="markers+lines", name="Mood (avg)", yaxis="y2"))
 
-    for f in filings:
-        ts = f.get("announced_at") or f.get("created_at")
-        if not ts:
-            continue
-        fig.add_vline(
-            x=ts,
-            line_width=1,
-            line_dash="dot",
-            line_color="orange",
-            annotation_text=f.get("category", "FILING"),
-            annotation_position="top left",
-        )
+    if prices and filings:
+        price_x = [p["ts"] for p in prices]
+        closes = [p["close"] for p in prices if p.get("close") is not None]
+        marker_y = (max(closes) * 1.01) if closes else 1.0
+        filing_x = []
+        filing_y = []
+        filing_text = []
+        for f in filings:
+            ts = f.get("announced_at") or f.get("created_at")
+            if not ts:
+                continue
+            filing_x.append(ts)
+            filing_y.append(marker_y)
+            filing_text.append(
+                f"{f.get('category', 'FILING')}: {f.get('summary', '')}"
+            )
+        if filing_x:
+            fig.add_trace(
+                go.Scatter(
+                    x=filing_x,
+                    y=filing_y,
+                    mode="markers",
+                    name="Filing Events",
+                    marker=dict(symbol="diamond", size=9, color="orange"),
+                    hovertext=filing_text,
+                    hoverinfo="text+x",
+                )
+            )
 
     fig.update_layout(
         xaxis_title="Time",

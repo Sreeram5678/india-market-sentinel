@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from datetime import date, timedelta
 
-from fastapi import FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 
 from ims.core.logging import setup_logging
 from ims.core.settings import get_settings
@@ -65,7 +65,7 @@ def remove_watchlist(symbol: str):
 
 
 @app.post("/analyze/{symbol}")
-def analyze(symbol: str, req: AnalyzeRequest):
+def analyze(symbol: str, req: AnalyzeRequest, background_tasks: BackgroundTasks):
     symbol = symbol.upper().strip()
     with connect(settings.db_path) as conn:
         repos = Repos(conn)
@@ -76,6 +76,13 @@ def analyze(symbol: str, req: AnalyzeRequest):
             run = repos.create_run(symbol)
         except Exception as e:  # noqa: BLE001
             raise HTTPException(500, f"Unable to create analyze run for {symbol}: {e}") from e
+    background_tasks.add_task(_execute_analyze_run, run.id, symbol, req.lookback_days)
+    return {"run_id": run.id, "status": "RUNNING"}
+
+
+def _execute_analyze_run(run_id: str, symbol: str, lookback_days: int) -> None:
+    with connect(settings.db_path) as conn:
+        repos = Repos(conn)
         try:
             from ims.pipelines.analyze import run_analyze
 
@@ -83,15 +90,13 @@ def analyze(symbol: str, req: AnalyzeRequest):
                 repos=repos,
                 settings=settings,
                 symbol=symbol,
-                lookback_days=req.lookback_days,
-                run_id=run.id,
+                lookback_days=lookback_days,
+                run_id=run_id,
             )
-            repos.finish_run(run.id, "SUCCESS")
-            return {"run_id": run.id, "status": "SUCCESS"}
+            repos.finish_run(run_id, "SUCCESS")
         except Exception as e:  # noqa: BLE001
-            repos.add_run_log(run.id, "ERROR", f"Analyze failed: {e}")
-            repos.finish_run(run.id, "FAILED")
-            return {"run_id": run.id, "status": "FAILED", "error": str(e)}
+            repos.add_run_log(run_id, "ERROR", f"Analyze failed: {e}")
+            repos.finish_run(run_id, "FAILED")
 
 
 @app.get("/runs/{run_id}", response_model=RunStatus)
