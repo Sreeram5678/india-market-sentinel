@@ -87,11 +87,11 @@ def analyze(symbol: str, req: AnalyzeRequest):
                 run_id=run.id,
             )
             repos.finish_run(run.id, "SUCCESS")
+            return {"run_id": run.id, "status": "SUCCESS"}
         except Exception as e:  # noqa: BLE001
             repos.add_run_log(run.id, "ERROR", f"Analyze failed: {e}")
             repos.finish_run(run.id, "FAILED")
-            raise HTTPException(500, f"Analyze failed for {symbol}: {e}") from e
-    return {"run_id": run.id}
+            return {"run_id": run.id, "status": "FAILED", "error": str(e)}
 
 
 @app.get("/runs/{run_id}", response_model=RunStatus)
